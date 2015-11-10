@@ -37,6 +37,18 @@ class TwigExtension extends \Twig_Extension
     }
 
     /**
+     * Register some standard globals
+     *
+     * @return array
+     */
+    public function getGlobals()
+    {
+        return array(
+            'grav' => $this->grav,
+        );
+    }
+
+    /**
      * Return a list of all filters.
      *
      * @return array
@@ -56,6 +68,7 @@ class TwigExtension extends \Twig_Extension
             new \Twig_SimpleFilter('md5', [$this,'md5Filter']),
             new \Twig_SimpleFilter('nicetime', [$this, 'nicetimeFilter']),
             new \Twig_SimpleFilter('randomize', [$this,'randomizeFilter']),
+            new \Twig_SimpleFilter('modulus', [$this,'modulusFilter']),
             new \Twig_SimpleFilter('rtrim', [$this, 'rtrimFilter']),
             new \Twig_SimpleFilter('safe_email', [$this,'safeEmailFilter']),
             new \Twig_SimpleFilter('safe_truncate', ['\Grav\Common\Utils','safeTruncate']),
@@ -88,6 +101,7 @@ class TwigExtension extends \Twig_Extension
             new \Twig_simpleFunction('t', [$this, 'translate']),
             new \Twig_simpleFunction('ta', [$this, 'translateArray']),
             new \Twig_SimpleFunction('url', [$this, 'urlFunc']),
+            new \Twig_SimpleFunction('evaluate', [$this, 'evaluateFunc']),
         ];
     }
 
@@ -115,7 +129,7 @@ class TwigExtension extends \Twig_Extension
         $email = '';
         $str_len = strlen($str);
         for ($i = 0; $i < $str_len; $i++) {
-            $email .= "&#" . ord($str[$i]);
+            $email .= "&#" . ord($str[$i]). ";";
         }
         return $email;
     }
@@ -151,6 +165,32 @@ class TwigExtension extends \Twig_Extension
         }
         return $sorted;
     }
+
+    /**
+     * Returns the modulus of an integer
+     *
+     * @param  int $number
+     * @param  int $divider
+     * @param  array $items array of items to select from to return
+     * @return int
+     */
+     public function modulusFilter($number, $divider, $items = null)
+     {
+         if (is_string($number)) {
+             $number = strlen($number);
+         }
+
+         $remainder = $number % $divider;
+
+         if (is_array($items)) {
+             if (isset($items[$remainder])) {
+                 return $items[$remainder];
+             } else {
+                 return $items[0];
+             }
+         }
+         return $remainder;
+     }
 
     /**
      * Inflector supports following notations:
@@ -421,6 +461,19 @@ class TwigExtension extends \Twig_Extension
         $uri = $this->grav['uri'];
 
         return $resource ? rtrim($uri->rootUrl($domain), '/') . '/' . $resource : null;
+    }
+
+    /**
+     * Evaluate a string
+     *
+     * @example {{ evaluate('grav.language.getLanguage') }}
+     *
+     * @param  string $input    String to be evaluated
+     * @return string           Returns the evaluated string
+     */
+    public function evaluateFunc($input)
+    {
+        return $this->grav['twig']->processString("{{ $input }}");
     }
 
     /**

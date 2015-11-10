@@ -36,7 +36,7 @@ class Validation
         // Validate type with fallback type text.
         $type = (string) isset($field['validate']['type']) ? $field['validate']['type'] : $field['type'];
         $method = 'type'.strtr($type, '-', '_');
-        $name = ucfirst($field['label'] ? $field['label'] : $field['name']);
+        $name = ucfirst(isset($field['label']) ? $field['label'] : $field['name']);
         $message = (string) isset($field['validate']['message']) ? $field['validate']['message'] : 'Invalid input in "' . $language->translate($name) . '""';
 
         if (method_exists(__CLASS__, $method)) {
@@ -531,7 +531,11 @@ class Validation
 
         if ($multi) {
             foreach ($values as $key => $value) {
-                $values[$key] = explode(',', $value[0]);
+                if (is_array($value)) {
+                    $value = implode(',', $value);
+                }
+
+                $values[$key] =  array_map('trim', explode(',', $value));
             }
         }
 
@@ -584,6 +588,10 @@ class Validation
 
     public static function validateRequired($value, $params)
     {
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+        
         return (bool) $params !== true || !empty($value);
     }
 
